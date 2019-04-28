@@ -4,6 +4,7 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "LanceWilliamsHAC.h"
 #include "Graph.h"
 #define numVertices numVerticies
@@ -198,10 +199,14 @@ static indexpair getVerticeWithMinDist(int size ,double **dist){
 //     }
 //   }
   
-//   return newDend; 
-// }
-static double **updateDist(int size ,int method ,double **dist ,indexpair ip){
-  //Constants to be used in formulas based on methods
+  //return newDend; 
+//}
+static double **updateDist(int size,int method,double **dist,indexpair ip){
+    //defining constants to be used in formulas based on methods
+  if(size ==1)
+  {
+    return 0;
+  }
   double alpha1,alpha2,beta,gamma;
   if(method == 1){
     alpha1 = 0.5;
@@ -214,34 +219,139 @@ static double **updateDist(int size ,int method ,double **dist ,indexpair ip){
     beta = 0;
     gamma = 0.5; 
   }
-  printf("New size of dist = %d\n", size-1);
-
-  double **newDist = malloc(sizeof(double *) * (size - 1));
-  for(int i = 0; i < size; i++){
-    newDist[i] = malloc(sizeof(double) * size - 1);
+  double **newdist = malloc(sizeof(double *)*(size-1));
+  for(int i = 0;i<size-1;i++)
+  {
+    newdist[i] = malloc(sizeof(double)*size-1);
   }
-
+  for(int d_col = 0;d_col<size-1;d_col++)
+  {
+    if(d_col == ip.index1 || d_col == ip.index2)
+    {
+      continue;
+    }
+    newdist[size-2][d_col] = alpha1*dist[ip.index1][d_col] + alpha2*dist[ip.index2][d_col] + gamma*fabs(dist[ip.index1][d_col]-dist[ip.index2][d_col]);
+  }
+  for(int d_row = 0;d_row<size-1;d_row++)
+  {
+    if(d_row == ip.index1 || d_row == ip.index2)
+    {
+      continue;
+    }
+    newdist[d_row][size-2] = alpha1*dist[d_row][ip.index1] + alpha2*dist[d_row][ip.index2] + gamma*fabs(dist[d_row][ip.index1]-dist[d_row][ip.index2]);
+  }
+  newdist[size - 2][size - 2] = 0;
+ // printf("hi\n");
+  if(ip.index1 > ip.index2)
+  {
   int o_row = 0;
-  //Iterating through newDist matrix
-  for(int row = 0; row < size - 1; row++){
-    if(o_row == ip.index1 || o_row == ip.index2){
+  for(int row = 0;row<size-1;row++)
+  {
+    if(o_row ==ip.index1)
+    {
       o_row++;
     }
+    if(o_row ==ip.index2)
+    {
+      o_row++;
+    }
+
     int o_col = 0;
-    for(int col = 0; col<size-1 ; col++){
-      if(o_col == ip.index1 || o_col ==ip.index2){
-         o_col++;
+    for(int col = 0;col<size-1;col++)
+    {
+      // if(row == col)
+      // {
+      //   continue;
+      // }
+      if(o_col == ip.index1)
+      {
+        o_col++;
       }  
-    
-      if(row != size - 2 && col != size - 2){
-        newDist[row][col] = dist[o_row][o_col];
+      if(o_col == ip.index2)
+      {
+        o_col++;
+      }
+      if(row != size-2 && col != size-2)
+      {
+        newdist[row][col] = dist[o_row][o_col];
       }
       //Updating when a minimum distance found
       o_col++;
     }
     o_row++;
   }
-  return newDist ;
+  }
+else if(ip.index2 > ip.index1)
+{
+  int o_row = 0;
+  for(int row = 0;row<size-1;row++)
+  {
+    if(o_row ==ip.index2)
+    {
+      o_row++;
+    }
+    if(o_row ==ip.index1)
+    {
+      o_row++;
+    }
+
+    int o_col = 0;
+    for(int col = 0;col<size-1;col++)
+    {
+      // if(row == col)
+      // {
+      //   continue;
+      // }
+      if(o_col == ip.index2)
+      {
+        o_col++;
+      }  
+      if(o_col == ip.index1)
+      {
+        o_col++;
+      }
+      if(row != size-2 && col != size-2)
+      {
+        newdist[row][col] = dist[o_row][o_col];
+      }
+      //updating when a minimum distance found
+      o_col++;
+    }
+    o_row++;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+    printf("\n\n");
+    for(int i = 0;i<size;i++)
+    {
+      for(int j= 0;j<size;j++)
+      {
+        printf("row:%d column:%d value:%f\t",i,j,dist[i][j]);
+      }
+      printf("\n");
+    }
+    printf("\n\n");
+    for(int i = 0;i<size-1;i++)
+    {
+      for(int j= 0;j<size-1;j++)
+      {
+        printf("row:%d column:%d value:%f\t",i,j,newdist[i][j]);
+      }
+      printf("\n");
+    }
+  return newdist ;
 }
 
 
