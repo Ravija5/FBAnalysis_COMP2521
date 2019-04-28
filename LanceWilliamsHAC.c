@@ -220,9 +220,6 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     }
     newdist[size-2][d_col] = alpha1*dist[ip.index1][d_col] + alpha2*dist[ip.index2][d_col] + gamma*fabs(dist[ip.index1][d_col]-dist[ip.index2][d_col]);
   }
- // printf("hi\n");
-  if(ip.index1 > ip.index2)
-  {
   for(int d_row = 0;d_row<size-1;d_row++)
   {
     if(d_row == ip.index1 || d_row == ip.index2)
@@ -232,6 +229,9 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     newdist[d_row][size-2] = alpha1*dist[d_row][ip.index1] + alpha2*dist[d_row][ip.index2] + gamma*fabs(dist[d_row][ip.index1]-dist[d_row][ip.index2]);
   }
   newdist[size - 2][size - 2] = 0;
+ // printf("hi\n");
+  if(ip.index1 > ip.index2)
+  {
   int o_row = 0;
   for(int row = 0;row<size-1;row++)
   {
@@ -269,17 +269,8 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     o_row++;
   }
   }
-if(ip.index2 > ip.index1)
-  {
-  for(int d_row = 0;d_row<size-1;d_row++)
-  {
-    if(d_row == ip.index1 || d_row == ip.index2)
-    {
-      continue;
-    }
-    newdist[d_row][size-2] = alpha1*dist[d_row][ip.index1] + alpha2*dist[d_row][ip.index2] + gamma*fabs(dist[d_row][ip.index1]-dist[d_row][ip.index2]);
-  }
-  newdist[size - 2][size - 2] = 0;
+else if(ip.index2 > ip.index1)
+{
   int o_row = 0;
   for(int row = 0;row<size-1;row++)
   {
