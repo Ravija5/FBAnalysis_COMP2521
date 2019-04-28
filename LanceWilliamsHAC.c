@@ -4,6 +4,7 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "LanceWilliamsHAC.h"
 #include "Graph.h"
 #define numVertices numVerticies
@@ -185,6 +186,10 @@ static Dendrogram *updateDendogram(int size,Dendrogram *dendA,indexpair vp){
 }
 static double **updateDist(int size,int method,double **dist,indexpair ip){
     //defining constants to be used in formulas based on methods
+  if(size ==1)
+  {
+    return 0;
+  }
   double alpha1,alpha2,beta,gamma;
   if(method == 1)
   {
@@ -201,20 +206,38 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     gamma = 0.5; 
   }
   double **newdist = malloc(sizeof(double *)*(size-1));
-  for(int i = 0;i<size;i++)
+  for(int i = 0;i<size-1;i++)
   {
     newdist[i] = malloc(sizeof(double)*size-1);
   }
-  // for(int d_col = 0;d_col<size-1;d_col++)
-  // {
-  //   new
-  // }
+  for(int d_col = 0;d_col<size-1;d_col++)
+  {
+    if(d_col == ip.index1 || d_col == ip.index2)
+    {
+      continue;
+    }
+    newdist[size-2][d_col] = alpha1*dist[ip.index1][d_col] + alpha2*dist[ip.index2][d_col] + gamma*fabs(dist[ip.index1][d_col]-dist[ip.index2][d_col]);
+  }
+ // printf("hi\n");
+  for(int d_row = 0;d_row<size-1;d_row++)
+  {
+    if(d_row == ip.index1 || d_row == ip.index2)
+    {
+      continue;
+    }
+    newdist[d_row][size-2] = alpha1*dist[d_row][ip.index1] + alpha2*dist[d_row][ip.index2] + gamma*fabs(dist[d_row][ip.index1]-dist[d_row][ip.index2]);
+  }
+  newdist[size - 2][size - 2] = 0;
   int o_row = 0;
   for(int row = 0;row<size-1;row++)
   {
     if(o_row == ip.index1 || o_row ==ip.index2)
     {
       o_row++;
+      if(o_row == ip.index1 || o_row ==ip.index2)
+      {
+        o_row++;
+      }
     }
     int o_col = 0;
     for(int col = 0;col<size-1;col++)
@@ -225,7 +248,11 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
       // }
       if(o_col == ip.index1 || o_col ==ip.index2)
       {
-         o_col++;
+        o_col++;
+        if(o_col == ip.index1 || o_col ==ip.index2)
+        {
+          o_col++;
+        }
       }  
       if(row != size-2 && col != size-2)
       {
