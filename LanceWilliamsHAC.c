@@ -16,7 +16,7 @@ typedef struct indexpair{
 static double edgeWeightvalue(Graph g,int row,int col);
 static indexpair getVerticeWithMinDist(int size,double **dist);
 static Dendrogram *updateDendogram(int size,Dendrogram *dendA,indexpair vp);
-//static double **updateDist(int size,double **dist,indexpair ip);
+static double **updateDist(int size,int method,double **dist,indexpair ip);
 //function to create a new dendogram
 static Dendrogram newDendogram(int vertex){
   Dendrogram newD = malloc(sizeof(DNode));
@@ -36,22 +36,6 @@ static Dendrogram newDendogram(int vertex){
  */
 
 Dendrogram LanceWilliamsHAC(Graph g, int method) {
-  //defining constants to be used in formulas based on methods
-  double alpha1,alpha2,beta,gamma;
-  if(method == 1)
-  {
-    alpha1 = 0.5;
-    alpha2 = 0.5;
-    beta = 0;
-    gamma = -0.5;
-  }
-  else if(method == 2)
-  {
-    alpha1 = 0.5;
-    alpha2 = 0.5;
-    beta = 0;
-    gamma = 0.5; 
-  }
   //intialising a matrix of doubles to store the distance
   double **dist = malloc(sizeof(double *)*numVertices(g));
   for(int i = 0;i<numVertices(g);i++)
@@ -89,7 +73,7 @@ Dendrogram LanceWilliamsHAC(Graph g, int method) {
     //printf("%d\n",count);
     ip = getVerticeWithMinDist((numVertices(g)-count),dist);
     dendA = updateDendogram((numVertices(g)-count),dendA,ip);
-    //dist = updateDist((numVertices(g)-count),dist,ip);
+    dist = updateDist((numVertices(g)-count),method,dist,ip);
     //printf("row:%d col:%d\n",vp.index1,vp.index2);
   }
   //printf("toooocool\n");
@@ -110,8 +94,7 @@ static double edgeWeightvalue(Graph g,int row,int col){
   return 0;
 }
 //function to find clusters with minimum distances
-static indexpair getVerticeWithMinDist(int size,double **dist){
-  indexpair VP;
+static indexpair getVerticeWithMinDist(int size,double **dist){  indexpair VP;
   //setting a default value 
   VP.index1 = 0;
   VP.index2 = 0;
@@ -200,10 +183,61 @@ static Dendrogram *updateDendogram(int size,Dendrogram *dendA,indexpair vp){
   
   return newDend; 
 }
-// static double **updateDist(int size,double **dist,indexpair ip){
-
-//   return NULL;
-// }
+static double **updateDist(int size,int method,double **dist,indexpair ip){
+    //defining constants to be used in formulas based on methods
+  double alpha1,alpha2,beta,gamma;
+  if(method == 1)
+  {
+    alpha1 = 0.5;
+    alpha2 = 0.5;
+    beta = 0;
+    gamma = -0.5;
+  }
+  else if(method == 2)
+  {
+    alpha1 = 0.5;
+    alpha2 = 0.5;
+    beta = 0;
+    gamma = 0.5; 
+  }
+  double **newdist = malloc(sizeof(double *)*(size-1));
+  for(int i = 0;i<size;i++)
+  {
+    newdist[i] = malloc(sizeof(double)*size-1);
+  }
+  // for(int d_col = 0;d_col<size-1;d_col++)
+  // {
+  //   new
+  // }
+  int o_row = 0;
+  for(int row = 0;row<size-1;row++)
+  {
+    if(o_row == ip.index1 || o_row ==ip.index2)
+    {
+      o_row++;
+    }
+    int o_col = 0;
+    for(int col = 0;col<size-1;col++)
+    {
+      // if(row == col)
+      // {
+      //   continue;
+      // }
+      if(o_col == ip.index1 || o_col ==ip.index2)
+      {
+         o_col++;
+      }  
+      if(row != size-2 && col != size-2)
+      {
+        newdist[row][col] = dist[o_row][o_col];
+      }
+      //updating when a minimum distance found
+      o_col++;
+    }
+    o_row++;
+  }
+  return newdist ;
+}
 void freeDendrogram(Dendrogram d) {
 	return;
 }
