@@ -8,65 +8,17 @@
 #include "LanceWilliamsHAC.h"
 #include "Graph.h"
 #define numVertices numVerticies
-
-// #define ALPHA1 0.5
-// #define ALPHA2 0.5
-// #define BETA 0
-
 typedef int* cluster;
-
-//Struct containing pairs of index with minimum distance b/w them
+//structure to hold the positions of distances with minimum distances
 typedef struct indexpair{
   int index1;
   int index2;
 }indexpair;
-
-//Static functions 
-static Dendrogram newDendogram(int vertex);
-static double** newDistMatrix(Graph g);
-static double edgeWeightValue(Graph g,int row,int col);
+static double edgeWeightvalue(Graph g,int row,int col);
 static indexpair getVerticeWithMinDist(int size,double **dist);
-//static Dendrogram *updateDendogram(int size,Dendrogram *dendRep,indexpair ip);
+static Dendrogram *updateDendogram(int size,Dendrogram *dendA,indexpair vp);
 static double **updateDist(int size,int method,double **dist,indexpair ip);
-static void printMatrix(double** matrix, int size);
-
-/* 
- * Finds Dendrogram using Lance-Williams algorithm (as discussed in the specs) 
-   for the given graph g and the specified method for agglomerative clustering.
-   Method value 1 represents 'Single linkage', and 2 represents 'Complete linkage'.
-   For this assignment, you only need to implement the above two methods. 
-
-   The function returns 'Dendrogram' structure (binary tree) with the required information.
- * 
- */
-
-Dendrogram LanceWilliamsHAC(Graph g, int method) {
-
-  double **dist = newDistMatrix(g);
-  printMatrix(dist, numVertices(g));
-
-  //Initialising an array of Dendogram structs
-  Dendrogram *dendRep = malloc(sizeof(DNode) * numVertices(g));
-  for(int i = 0; i < numVertices(g) ; i++){
-    dendRep[i] = newDendogram(i);
-  }
-
-  //Iterating through number of times the clusters need to be merged 
-  for(int i = 0; i < numVertices(g) ; i++){
-    indexpair ip;
-    ip = getVerticeWithMinDist((numVertices(g)-i),dist);
-    printf("Min dist vertices found in run %d are %d and %d\n", i, ip.index1, ip.index2);
-    //dendRep = updateDendogram((numVertices(g)-i),dendRep,ip);
-    dist = updateDist( (numVertices(g)-i), method, dist, ip);
-    printMatrix(dist, numVertices(g));
-    //printf("row:%d col:%d\n",ip.index1,ip.index2);
-  }
-  // printf("%d\n"*dendRep->vertex);
- 
-  return dendRep[0];
-}
-
-//Function to initialise a Dendogram struct
+//function to create a new dendogram
 static Dendrogram newDendogram(int vertex){
   Dendrogram newD = malloc(sizeof(DNode));
   newD->vertex = vertex;
@@ -74,133 +26,177 @@ static Dendrogram newDendogram(int vertex){
   newD->right = NULL;
   return newD;
 }
+/* 
+ * Finds Dendrogram using Lance-Williams algorithm (as discussed in the specs) 
+   for the given graph g and the specified method for agglomerative clustering.
+   Method value 1 represents 'Single linkage', and 2 represents 'Complete linkage'.
+   For this assignment, you only need to implement the above two methods. 
+   The function returns 'Dendrogram' structure (binary tree) with the required information.
+ * 
+ */
 
-//Function to derive the distance matrix
-static double** newDistMatrix(Graph g){
-  double** dist =  malloc(sizeof( double* ) * numVertices(g));
-  for(int i = 0;i<numVertices(g);i++){
+Dendrogram LanceWilliamsHAC(Graph g, int method) {
+  //intialising a matrix of doubles to store the distance
+  double **dist = malloc(sizeof(double *)*numVertices(g));
+  for(int i = 0;i<numVertices(g);i++)
+  {
     dist[i] = malloc(sizeof(double)*numVertices(g));
   }
-  
-  for(int row = 0;row<numVertices(g);row++){
-    for(int col = 0;col<numVertices(g);col++){
-     
-      if(row == col){
-        //Diagonals are initialised to 0
+  //intialising the distance array with the distances between vertices
+  for(int row = 0;row<numVertices(g);row++)
+  {
+    for(int col = 0;col<numVertices(g);col++)
+    {
+      //dealing with the diagnol in the matrix
+      if(row == col)
+      {
         dist[row][col] = 0;
-      }else{
-        //Values of distance initialised based on graph
-        dist[row][col] = 1/edgeWeightValue(g,row,col);
+      }
+      //alloting distances based on graph
+      else
+      {
+         if(edgeWeightvalue(g,row,col) != 0)
+         {
+           if(1/edgeWeightvalue(g,row,col) >1/edgeWeightvalue(g,col,row) && edgeWeightvalue(g,col,row) != 0)
+          dist[row][col] = 1/edgeWeightvalue(g,col,row);
+          else
+          {
+               dist[row][col] = 1/edgeWeightvalue(g,row,col);
+          }
+          
+         }
+        else
+          dist[row][col] = 1/edgeWeightvalue(g,col,row);
         //printf("row :%d col:%d %f\n",row,col,dist[row][col]);
       }
     }
   }
-  return dist;
+  //initiliasing the Dendogram array
+  Dendrogram *dendA = malloc(sizeof(DNode)*numVertices(g));
+  for(int i = 0;i<numVertices(g);i++)
+  {
+    dendA[i] = newDendogram(i);
+  }
+  //iterating number of times the clustered need to be merged 
+  for(int count = 0;count < numVertices(g);count++)
+  {
+    indexpair ip;
+    //printf("%d\n",count);
+    ip = getVerticeWithMinDist((numVertices(g)-count),dist);
+  //  printf("%d %d\n",ip.index1,ip.index2);
+    dendA = updateDendogram((numVertices(g)-count),dendA,ip);
+
+    dist = updateDist((numVertices(g)-count),method,dist,ip);   
+  //  break;
+    //printf("row:%d col:%d\n",vp.index1,vp.index2);
+  }
+  //printf("toooocool\n");
+  // printf("%d\n"*dendA->vertex);
+ 
+  return dendA[0];
 }
 
-
-//Function to calculate edge weight between 2 vertices
-static double edgeWeightValue(Graph g,int row,int col){
-  for(AdjList temp = outIncident(g,row) ; temp != NULL; temp = temp->next){
-    if(temp->w == col){
+//function to calculate edge weight betwenn 2 vertices
+static double edgeWeightvalue(Graph g,int row,int col){
+  for(AdjList temp = outIncident(g,row);temp != NULL;temp = temp->next)
+  {
+    if(temp->w == col)
+    {
       return temp->weight;  
     }
   }
   return 0;
 }
-
 //function to find clusters with minimum distances
-static indexpair getVerticeWithMinDist(int size ,double **dist){
-
-  indexpair ip;
-  //Initialise indexpair struct
-  ip.index1 = ip.index2 = 0;
-
+static indexpair getVerticeWithMinDist(int size,double **dist){  indexpair VP;
+  //setting a default value 
+  VP.index1 = 0;
+  VP.index2 = 1;
   double min = dist[0][1];
-
-  for(int row = 0;row < size; row++){
-    for(int col = 0;col < size; col++){
-      if(row == col){
-        //Reached a diagonal element
+  for(int row = 0;row<size;row++)
+  {
+    for(int col = 0;col<size;col++)
+    {
+      if(row == col)
+      {
         continue;
       }
-
-      //Updating when a minimum distance is found
-      if(dist[row][col] < min){
+      //updating when a minimum distance found
+      if(dist[row][col] < min)
+      {
         min = dist[row][col];
-        ip.index1 = row;
-        ip.index2 = col;
+        VP.index1 = row;
+        VP.index2 = col;
       }
     }
   }
-  return ip;
+  return VP;
 }
-
-//function to update the dendogram after merging clusters
-// static Dendrogram *updateDendogram(int size,Dendrogram *dendRep,indexpair ip){
-//   //IF THE SIZE OF THE DENDOGRAM ARRAY IS ONE THEN NOTHING NEEDS TO BE DONE
-//   if(size == 1)
-//   {
-//     return dendRep;
-//   }
-//   //printf("size:%d\n",size);
-//   //creating a new dendogram array with size one less then the previous one
-//   Dendrogram *newDend = malloc(sizeof(DNode)*(size - 1));
-//   int j = 0;
-//   //setting the last node of the dendogram array to be a root node for other clusters
-//   newDend[size - 2] = newDendogram(-1);
-//   //calculating which pair of index appears first
-//   if(ip.index1 < ip.index2)
-//   {
-//     //iterating through the new dendogram array to update it with accordance to merged clusters
-//     for(int i = 0;i<(size-1);i++)
-//     {
-//       //if j is equal to one of the vertices to be merged ,then adding the new node to heirarchy
-//       if(j == ip.index1)
-//       {
-//         newDend[size-2]->left = dendRep[j];
-//         //incrementing j
-//         j++;
-//       }
-//       if(j == ip.index2)
-//       {
-//         newDend[size-2]->right = dendRep[j];
-//         j++;
-//       }
-//       //added condition to check the newDend[size-2] always holds the new heirarchy
-//       if(i != (size-2))
-//       {
-//         newDend[i] = dendRep[j];
-//       }
-//       //printf("cool\n");
-//       j++;
-//     }
-//   }
-//   else
-//   {
-//     for(int i = 0;i<(size-1);i++)
-//     {
-//       if(j == ip.index2)
-//       {
-//         newDend[size-2]->left = dendRep[j];
-//         j++;
-//       }
-//       if(j == ip.index1)
-//       {
-//         newDend[size-2]->right = dendRep[j];
-//         j++;
-//       }
-//       if(i != (size-2))
-//       {
-//         newDend[i] = dendRep[j];
-//       }
-//      // printf("cool\n");
-//       j++;
-//     }
-//   }
+static Dendrogram *updateDendogram(int size,Dendrogram *dendA,indexpair vp){
+  //IF THE SIZE OF THE DENDOGRAM ARRAY IS ONE THEN NOTHING NEEDS TO BE DONE
+  if(size == 1)
+  {
+    return dendA;
+  }
+  //printf("size:%d\n",size);
+  //creating a new dendogram array with size one less then the previous one
+  Dendrogram *newDend = malloc(sizeof(DNode)*(size - 1));
+  int j = 0;
+  //setting the last node of the dendogram array to be a root node for other clusters
+  newDend[size - 2] = newDendogram(-1);
+  //calculating which pair of index appears first
+  if(vp.index1 < vp.index2)
+  {
+    //iterating through the new dendogram array to update it with accordance to merged clusters
+    for(int i = 0;i<(size-1);i++)
+    {
+      //if j is equal to one of the vertices to be merged ,then adding the new node to heirarchy
+      if(j == vp.index1)
+      {
+        newDend[size-2]->left = dendA[j];
+        //incrementing j
+        j++;
+      }
+      if(j == vp.index2)
+      {
+        newDend[size-2]->right = dendA[j];
+        j++;
+      }
+      //added condition to check the newDend[size-2] always holds the new heirarchy
+      if(i != (size-2))
+      {
+        newDend[i] = dendA[j];
+      }
+      //printf("cool\n");
+      j++;
+    }
+  }
+  else
+  {
+    for(int i = 0;i<(size-1);i++)
+    {
+      if(j == vp.index2)
+      {
+        newDend[size-2]->left = dendA[j];
+        j++;
+      }
+      if(j == vp.index1)
+      {
+        newDend[size-2]->right = dendA[j];
+        j++;
+      }
+      if(i != (size-2))
+      {
+        newDend[i] = dendA[j];
+      }
+     // printf("cool\n");
+      j++;
+    }
+  }
   
-  //return newDend; 
-//}
+  return newDend; 
+}
+//function to update the dendogram after merging clusters
 static double **updateDist(int size,int method,double **dist,indexpair ip){
     //defining constants to be used in formulas based on methods
   if(size ==1)
@@ -224,25 +220,51 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
   {
     newdist[i] = malloc(sizeof(double)*size-1);
   }
-  for(int d_col = 0;d_col<size-1;d_col++)
-  {
-    if(d_col == ip.index1 || d_col == ip.index2)
-    {
-      continue;
-    }
-    newdist[size-2][d_col] = alpha1*dist[ip.index1][d_col] + alpha2*dist[ip.index2][d_col] + gamma*fabs(dist[ip.index1][d_col]-dist[ip.index2][d_col]);
-  }
+  // int default_col = 0;
+  // for(int d_col = 0;d_col<size-1;d_col++)
+  // {
+  //   if(d_col == ip.index1)
+  //   {
+  //   //  newdist[d_row][size-2] = 0;
+  //     default_col++;
+  //   }
+  //   if(d_col == ip.index2)
+  //   {
+  //     default_col++;
+  //   }
+  //   if(d_col != size -2)
+  //   {
+  //   newdist[size-2][d_col] = alpha1*dist[ip.index1][default_col] + alpha2*dist[ip.index2][default_col] + gamma*fabs(dist[ip.index1][default_col]-dist[ip.index2][default_col]);
+  //   }
+  // }
+  int default_row = 0;
   for(int d_row = 0;d_row<size-1;d_row++)
   {
-    if(d_row == ip.index1 || d_row == ip.index2)
+    if(default_row == ip.index1)
     {
-      continue;
+    //  newdist[d_row][size-2] = 0;
+      default_row++;
     }
-    newdist[d_row][size-2] = alpha1*dist[d_row][ip.index1] + alpha2*dist[d_row][ip.index2] + gamma*fabs(dist[d_row][ip.index1]-dist[d_row][ip.index2]);
+    if(default_row == ip.index2)
+    {
+      default_row++;
+    }
+    if(d_row != size-2)
+    {
+      //printf("dist[%d][%d] = %f  dist[%d][%d] = %f\n\n",default_row,ip.index1,dist[default_row][ip.index1],default_row,ip.index2,dist[default_row][ip.index2]);
+      newdist[d_row][size-2] = alpha1*dist[default_row][ip.index1] + alpha2*dist[default_row][ip.index2] + gamma*fabs(dist[default_row][ip.index1]-dist[default_row][ip.index2]);
+    //  printf("row:%d col:%d =%f\n\n",d_row,size-2,newdist[d_row][size-2]);
+    }
+    default_row++;
   }
+  for(int i = 0;i<size-1;i++)
+  {
+    newdist[size-2][i] = newdist[i][size-2];
+  }
+ //  printf("llalal\n");
   newdist[size - 2][size - 2] = 0;
  // printf("hi\n");
-  if(ip.index1 > ip.index2)
+  if(ip.index1 < ip.index2)
   {
   int o_row = 0;
   for(int row = 0;row<size-1;row++)
@@ -259,10 +281,12 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     int o_col = 0;
     for(int col = 0;col<size-1;col++)
     {
-      // if(row == col)
-      // {
-      //   continue;
-      // }
+      if(row == col)
+      {
+        o_col++;
+        newdist[row][col] = 0;
+        continue;
+      }
       if(o_col == ip.index1)
       {
         o_col++;
@@ -281,7 +305,7 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     o_row++;
   }
   }
-else if(ip.index2 > ip.index1)
+else
 {
   int o_row = 0;
   for(int row = 0;row<size-1;row++)
@@ -298,10 +322,11 @@ else if(ip.index2 > ip.index1)
     int o_col = 0;
     for(int col = 0;col<size-1;col++)
     {
-      // if(row == col)
-      // {
-      //   continue;
-      // }
+      if(row == col)
+      {
+        o_col++;
+        continue;
+      }
       if(o_col == ip.index2)
       {
         o_col++;
@@ -315,7 +340,6 @@ else if(ip.index2 > ip.index1)
         newdist[row][col] = dist[o_row][o_col];
       }
       //updating when a minimum distance found
-      o_col++;
     }
     o_row++;
   }
@@ -333,38 +357,27 @@ else if(ip.index2 > ip.index1)
 
 
 
-    printf("\n\n");
-    for(int i = 0;i<size;i++)
-    {
-      for(int j= 0;j<size;j++)
-      {
-        printf("row:%d column:%d value:%f\t",i,j,dist[i][j]);
-      }
-      printf("\n");
-    }
-    printf("\n\n");
-    for(int i = 0;i<size-1;i++)
-    {
-      for(int j= 0;j<size-1;j++)
-      {
-        printf("row:%d column:%d value:%f\t",i,j,newdist[i][j]);
-      }
-      printf("\n");
-    }
+  //   printf("\n\n");
+  //   for(int i = 0;i<size;i++)
+  //   {
+  //     for(int j= 0;j<size;j++)
+  //     {
+  //       printf("row:%d column:%d value:%f\t",i,j,dist[i][j]);
+  //     }
+  //     printf("\n");
+  //  }
+  //   printf("\n\n");
+  //   for(int i = 0;i<size-1;i++)
+  //   {
+  //     for(int j= 0;j<size-1;j++)
+  //     {
+  //       printf("row:%d column:%d value:%f\t",i,j,newdist[i][j]);
+  //     }
+  //     printf("\n");
+  //   }
   return newdist ;
 }
 
-
-
 void freeDendrogram(Dendrogram d) {
-	return;
-}
-
-static void printMatrix(double** matrix, int size){
-  for(int i = 0; i < size; i++){
-    for(int j = 0; j < size; j++){
-      printf("%f ", matrix[i][j]);
-    }
-    printf("\n");
-  }
+  return;
 }
