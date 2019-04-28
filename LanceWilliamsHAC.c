@@ -251,14 +251,14 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
       // {
       //   continue;
       // }
-      if(o_col == ip.index1 || o_col ==ip.index2)
+      if(o_col == ip.index1)
       {
         o_col++;
-        if(o_col == ip.index1 || o_col ==ip.index2)
-        {
-          o_col++;
-        }
       }  
+      if(o_col == ip.index2)
+      {
+        o_col++;
+      }
       if(row != size-2 && col != size-2)
       {
         newdist[row][col] = dist[o_row][o_col];
@@ -290,14 +290,14 @@ else if(ip.index2 > ip.index1)
       // {
       //   continue;
       // }
-      if(o_col == ip.index1 || o_col ==ip.index2)
+      if(o_col == ip.index2)
       {
         o_col++;
-        if(o_col == ip.index1 || o_col ==ip.index2)
-        {
-          o_col++;
-        }
       }  
+      if(o_col == ip.index1)
+      {
+        o_col++;
+      }
       if(row != size-2 && col != size-2)
       {
         newdist[row][col] = dist[o_row][o_col];
@@ -307,7 +307,7 @@ else if(ip.index2 > ip.index1)
     }
     o_row++;
   }
-  }
+}
 
 
 
