@@ -74,7 +74,9 @@ Dendrogram LanceWilliamsHAC(Graph g, int method) {
     //printf("%d\n",count);
     ip = getVerticeWithMinDist((numVertices(g)-count),dist);
     dendA = updateDendogram((numVertices(g)-count),dendA,ip);
-    dist = updateDist((numVertices(g)-count),method,dist,ip);
+
+    dist = updateDist((numVertices(g)-count),method,dist,ip);   
+  //  break;
     //printf("row:%d col:%d\n",vp.index1,vp.index2);
   }
   //printf("toooocool\n");
@@ -219,6 +221,8 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     newdist[size-2][d_col] = alpha1*dist[ip.index1][d_col] + alpha2*dist[ip.index2][d_col] + gamma*fabs(dist[ip.index1][d_col]-dist[ip.index2][d_col]);
   }
  // printf("hi\n");
+  if(ip.index1 > ip.index2)
+  {
   for(int d_row = 0;d_row<size-1;d_row++)
   {
     if(d_row == ip.index1 || d_row == ip.index2)
@@ -231,14 +235,15 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
   int o_row = 0;
   for(int row = 0;row<size-1;row++)
   {
-    if(o_row == ip.index1 || o_row ==ip.index2)
+    if(o_row ==ip.index1)
     {
       o_row++;
-      if(o_row == ip.index1 || o_row ==ip.index2)
-      {
-        o_row++;
-      }
     }
+    if(o_row ==ip.index2)
+    {
+      o_row++;
+    }
+
     int o_col = 0;
     for(int col = 0;col<size-1;col++)
     {
@@ -263,6 +268,86 @@ static double **updateDist(int size,int method,double **dist,indexpair ip){
     }
     o_row++;
   }
+  }
+if(ip.index2 > ip.index1)
+  {
+  for(int d_row = 0;d_row<size-1;d_row++)
+  {
+    if(d_row == ip.index1 || d_row == ip.index2)
+    {
+      continue;
+    }
+    newdist[d_row][size-2] = alpha1*dist[d_row][ip.index1] + alpha2*dist[d_row][ip.index2] + gamma*fabs(dist[d_row][ip.index1]-dist[d_row][ip.index2]);
+  }
+  newdist[size - 2][size - 2] = 0;
+  int o_row = 0;
+  for(int row = 0;row<size-1;row++)
+  {
+    if(o_row ==ip.index2)
+    {
+      o_row++;
+    }
+    if(o_row ==ip.index1)
+    {
+      o_row++;
+    }
+
+    int o_col = 0;
+    for(int col = 0;col<size-1;col++)
+    {
+      // if(row == col)
+      // {
+      //   continue;
+      // }
+      if(o_col == ip.index1 || o_col ==ip.index2)
+      {
+        o_col++;
+        if(o_col == ip.index1 || o_col ==ip.index2)
+        {
+          o_col++;
+        }
+      }  
+      if(row != size-2 && col != size-2)
+      {
+        newdist[row][col] = dist[o_row][o_col];
+      }
+      //updating when a minimum distance found
+      o_col++;
+    }
+    o_row++;
+  }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    printf("\n\n");
+    for(int i = 0;i<size;i++)
+    {
+      for(int j= 0;j<size;j++)
+      {
+        printf("row:%d column:%d value:%f\t",i,j,dist[i][j]);
+      }
+      printf("\n");
+    }
+    printf("\n\n");
+    for(int i = 0;i<size-1;i++)
+    {
+      for(int j= 0;j<size-1;j++)
+      {
+        printf("row:%d column:%d value:%f\t",i,j,newdist[i][j]);
+      }
+      printf("\n");
+    }
   return newdist ;
 }
 void freeDendrogram(Dendrogram d) {
